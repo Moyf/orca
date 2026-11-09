@@ -74,7 +74,12 @@ const PLUGIN_APP_THEME_CSS_FALLBACKS: Record<
     light: { tint: '--text-link', percent: 30, into: '--chat-canvas' },
     dark: { tint: '--text-link', percent: 40, into: '--chat-canvas' }
   },
-  '--chat-selection-foreground': ['--foreground']
+  '--chat-selection-foreground': ['--foreground'],
+  '--chat-highlight': {
+    light: { tint: '--text-link', percent: 35, into: '--chat-canvas' },
+    dark: { tint: '--text-link', percent: 45, into: '--chat-canvas' }
+  },
+  '--chat-highlight-foreground': ['--chat-foreground-strong']
 }
 
 export function pluginAppThemeCssFallback(
