@@ -124,6 +124,8 @@ jobs:
       contents: read
     env:
       ORCA_BUILD_COMMIT: ${{ github.sha }}
+      # One arch: the x64 slice's boot verification cannot pass under Rosetta on arm64 runners.
+      ORCA_MAC_ARM64_ONLY: '1'
       # No signing identity on this runner; electron-builder skips codesign.
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
     steps:
