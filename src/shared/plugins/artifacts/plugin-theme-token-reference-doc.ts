@@ -63,6 +63,7 @@ const TOKEN_ROLES: Record<PluginAppThemeToken, string> = {
   '--split-divider': 'Divider between split tab groups',
   '--split-divider-hover': 'Split divider while hovered or dragged',
   '--chat-user-message': 'Your messages in chat; may be translucent, it paints over the chat',
+  '--chat-foreground-strong': 'Chat headings and other emphasized text',
   '--chat-bold-foreground': 'Bold text in chat messages',
   '--chat-muted-foreground':
     'Secondary chat text: tool rows, status lines, timestamps and hunk headers',
@@ -72,6 +73,9 @@ const TOKEN_ROLES: Record<PluginAppThemeToken, string> = {
     'Code blocks, tool output and diffs in chat; may be translucent, it paints over the chat',
   '--chat-selection': 'Selected text in chat; may be translucent, it paints over the chat',
   '--chat-selection-foreground': 'Text inside a chat selection',
+  '--chat-highlight':
+    'Highlighted (`==text==`) text in chat; may be translucent, it paints over the chat',
+  '--chat-highlight-foreground': 'Text on `--chat-highlight`',
   '--text-link': 'Links in Markdown previews, editors and agent chat',
   '--diff-added': 'Added-line hue: Monaco overview ruler and chat diff text',
   '--diff-added-background': 'Added lines in diffs',
@@ -101,7 +105,10 @@ const OMITTED_DESCRIPTIONS: Partial<Record<PluginAppThemeToken, string>> = {
   '--chat-code-block': '`--foreground` mixed lightly into the chat background',
   '--chat-selection':
     "`--text-link` (else Orca's link blue) mixed into the chat background, up to 30% light and 40% dark, as deep as keeps selected text 4.5:1 (never under 15%)",
-  '--chat-selection-foreground': 'same as `--foreground`'
+  '--chat-selection-foreground': 'same as `--foreground`',
+  '--chat-highlight':
+    "`--text-link` (else Orca's link blue) mixed 35% light and 45% dark into the chat background",
+  '--chat-highlight-foreground': 'same as `--chat-foreground-strong`'
 }
 
 /** What an omitted token becomes, read back from the real derivation with every other token

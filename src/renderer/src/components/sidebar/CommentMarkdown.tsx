@@ -10,6 +10,7 @@ import {
   type Options as MarkdownOptions
 } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { remarkChatHighlight } from './chat-markdown-highlight'
 import remarkBreaks from 'remark-breaks'
 import { remarkChatMath } from './chat-markdown-math'
 import { copyChatMathSelection } from './chat-markdown-math-selection'
@@ -67,6 +68,7 @@ const commentMarkdownFileUriUrlTransform: UrlTransform = (value, key, node) => {
 // remark-breaks preserves newlines expected by existing plain-text comments; CommonMark otherwise collapses them.
 const remarkPlugins = [
   remarkGfm,
+  remarkChatHighlight,
   remarkCjkFriendly,
   remarkAutolinkLiteralProseBoundary,
   remarkGitHubCallouts,
@@ -87,7 +89,16 @@ export function remarkGitHubReferences(
 
 const commentMarkdownSanitizeSchema: SanitizeSchema = {
   ...defaultSchema,
-  tagNames: [...(defaultSchema.tagNames ?? []), 'details', 'summary', 'sub', 'sup', 'ins', 'kbd'],
+  tagNames: [
+    ...(defaultSchema.tagNames ?? []),
+    'details',
+    'summary',
+    'sub',
+    'sup',
+    'ins',
+    'kbd',
+    'mark'
+  ],
   attributes: {
     ...defaultSchema.attributes,
     a: [...(defaultSchema.attributes?.a ?? []), 'href', 'title'],

@@ -13,6 +13,11 @@
   font-weight: 600;
 }
 
+.native-chat-markdown :where(mark) {
+  padding: 0.0625rem 0.25rem;
+  border-radius: var(--radius-sm, 0.375rem);
+}
+
 .native-chat-markdown h1 {
   font-size: 1.2857142857em;
 }
@@ -69,7 +74,7 @@
 
 [data-native-chat-message-tone='faint']
   .native-chat-markdown
-  :is(h1, h2, h3, h4, h5, h6, [role='heading'], strong, a, code, pre) {
+  :is(h1, h2, h3, h4, h5, h6, [role='heading'], strong, a, code, pre, mark) {
   color: inherit;
 }
 

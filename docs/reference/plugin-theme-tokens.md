@@ -55,6 +55,7 @@ Every key an app theme may set in `tokens` (see [plugin themes](plugin-themes.md
 | `--tab-inactive-foreground` | Inactive tab text | no | same as `--muted-foreground` |
 | `--split-divider` | Divider between split tab groups | no | Orca's built-in color |
 | `--split-divider-hover` | Split divider while hovered or dragged | no | Orca's built-in color |
+| `--chat-foreground-strong` | Chat headings and other emphasized text | no | light: `--foreground` mixed 92% into `--chat-canvas`; dark: `--foreground` mixed 90% into `--chat-canvas` |
 | `--chat-user-message` | Your messages in chat; may be translucent, it paints over the chat | no | `--foreground` mixed lightly into the chat background |
 | `--chat-bold-foreground` | Bold text in chat messages | no | the color of chat headings |
 | `--chat-muted-foreground` | Secondary chat text: tool rows, status lines, timestamps and hunk headers | no | `--muted-foreground` as chat paints it |
@@ -63,6 +64,8 @@ Every key an app theme may set in `tokens` (see [plugin themes](plugin-themes.md
 | `--chat-code-block` | Code blocks, tool output and diffs in chat; may be translucent, it paints over the chat | no | `--foreground` mixed lightly into the chat background |
 | `--chat-selection` | Selected text in chat; may be translucent, it paints over the chat | no | `--text-link` (else Orca's link blue) mixed into the chat background, up to 30% light and 40% dark, as deep as keeps selected text 4.5:1 (never under 15%) |
 | `--chat-selection-foreground` | Text inside a chat selection | no | same as `--foreground` |
+| `--chat-highlight` | Highlighted (`==text==`) text in chat; may be translucent, it paints over the chat | no | `--text-link` (else Orca's link blue) mixed 35% light and 45% dark into the chat background |
+| `--chat-highlight-foreground` | Text on `--chat-highlight` | no | same as `--chat-foreground-strong` |
 | `--text-link` | Links in Markdown previews, editors and agent chat | no | Orca's built-in color |
 | `--diff-added` | Added-line hue: Monaco overview ruler and chat diff text | no | same as `--git-decoration-added` |
 | `--diff-added-background` | Added lines in diffs | no | light: `--diff-added` at 13% opacity; dark: `--diff-added` at 16% opacity |

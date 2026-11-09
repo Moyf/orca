@@ -230,6 +230,7 @@
   --chat-composer-base: var(--chat-canvas);
   --chat-composer-border-mix: 11%;
   --chat-selection-mix: 30%;
+  --chat-highlight-mix: 35%;
   --chat-content-max-width: 46rem;
   --card: #fff;
   --card-foreground: #0a0a0a;
@@ -352,6 +353,7 @@
   --chat-composer-base: transparent;
   --chat-composer-border-mix: 9%;
   --chat-selection-mix: 40%;
+  --chat-highlight-mix: 45%;
   --chat-content-max-width: 46rem;
   --card: #171717;
   --card-foreground: #f0f0f0;
@@ -757,6 +759,16 @@ body[data-modal-overlay-open]
       var(--chat-canvas)
     )
   );
+  /* Marked text: the link hue a step deeper than selection, or the theme's highlight. */
+  --chat-highlight-surface: var(
+    --chat-highlight,
+    color-mix(
+      in srgb,
+      var(--text-link, var(--callout-note)) var(--chat-highlight-mix),
+      var(--chat-canvas)
+    )
+  );
+  --chat-highlight-text: var(--chat-highlight-foreground, var(--chat-foreground-strong));
 }
 
 @layer base {
@@ -784,6 +796,12 @@ body[data-modal-overlay-open]
     letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* The browser default yellow ignores dark themes; marked text follows the chat highlight tokens. */
+  mark {
+    background: var(--chat-highlight-surface);
+    color: var(--chat-highlight-text);
   }
 
   /* macOS opt-in: native smoothing draws heavier code glyphs than the app-wide grayscale. */
