@@ -97,10 +97,15 @@ jobs:
         shell: bash
         run: pnpm build:release
       - name: Package Windows installers
-        shell: bash
-        run: |
-          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
-          pnpm exec electron-builder --config config/electron-builder.config.cjs --win --publish never
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 40
+          max_attempts: 3
+          retry_wait_seconds: 30
+          shell: bash
+          command: |
+            node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+            pnpm exec electron-builder --config config/electron-builder.config.cjs --win --publish never
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -140,7 +145,8 @@ jobs:
             mobile/pnpm-lock.yaml
       - name: Install dependencies
         shell: bash
-        run: pnpm install --frozen-lockfile
+        # Dual-arch mac packaging needs both darwin natives, as release installs do.
+        run: pnpm run install:release
       - name: Install mobile dependencies
         uses: ./.github/actions/install-mobile-dependencies
       - name: Build the app
@@ -155,10 +161,15 @@ jobs:
           pnpm run build:notification-status-macos
           pnpm run ensure:electron-runtime
       - name: Package macOS app
-        shell: bash
+        uses: nick-fields/retry@v4
+        with:
+          timeout_minutes: 40
+          max_attempts: 3
+          retry_wait_seconds: 30
+          shell: bash
+          command: pnpm exec electron-builder --config config/electron-builder.config.cjs --mac --publish never
         env:
           ORCA_LOCAL_BUILD_VERSION: ${{ needs.version.outputs.version }}
-        run: pnpm exec electron-builder --config config/electron-builder.config.cjs --mac --publish never
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
         with:
