@@ -145,8 +145,7 @@ jobs:
             mobile/pnpm-lock.yaml
       - name: Install dependencies
         shell: bash
-        # Dual-arch mac packaging needs both darwin natives, as release installs do.
-        run: pnpm run install:release
+        run: pnpm install --frozen-lockfile
       - name: Install mobile dependencies
         uses: ./.github/actions/install-mobile-dependencies
       - name: Build the app
@@ -167,7 +166,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 30
           shell: bash
-          command: pnpm exec electron-builder --config config/electron-builder.config.cjs --mac --publish never
+          command: pnpm exec electron-builder --config config/electron-builder.config.cjs --mac --arm64 --publish never
         env:
           ORCA_LOCAL_BUILD_VERSION: ${{ needs.version.outputs.version }}
       - name: Upload macOS artifacts
