@@ -1,0 +1,207 @@
+name: AllFeats Build
+
+# Personal fork pipeline: builds unsigned Windows and macOS artifacts from this branch
+# and publishes both into one GitHub Release tagged allfeats-v<version>.
+# Mirrors dev-channel-win-build.yml's setup; skips signing, notarization and the
+# stablyai-only release repos.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to package without the leading v (default: package.json)'
+        required: false
+        type: string
+        default: ''
+  push:
+    tags:
+      - 'allfeats-v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: allfeats-build
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - id: v
+        shell: bash
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          version="${REQUESTED:-$(node -p "require('./package.json').version")}"
+          if ! grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$' <<<"$version"; then
+            echo "::error::version '$version' is not valid semver"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=allfeats-v$version" >> "$GITHUB_OUTPUT"
+
+  build-win:
+    needs: version
+    runs-on: windows-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+    env:
+      ORCA_BUILD_COMMIT: ${{ github.sha }}
+      ORCA_LOCAL_BUILD_VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      # pnpm must be on PATH before setup-node so setup-node can locate the store.
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+      - name: Resolve electron-builder download versions
+        id: eb-versions
+        shell: bash
+        run: node -p "const d = require('./package.json').devDependencies; 'versions=electron' + d.electron + '-builder' + d['electron-builder']" >> "$GITHUB_OUTPUT"
+      - name: Cache electron-builder downloads
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: allfeats-electron-builder-win-${{ steps.eb-versions.outputs.versions }}
+          restore-keys: |
+            allfeats-electron-builder-win-
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+      - name: Install mobile dependencies
+        uses: ./.github/actions/install-mobile-dependencies
+      - name: Build the app
+        shell: bash
+        run: pnpm build:release
+      - name: Package Windows installers
+        shell: bash
+        run: |
+          node config/scripts/native-build/node-addons/ensure-native-runtime.mjs --runtime=electron
+          pnpm exec electron-builder --config config/electron-builder.config.cjs --win --publish never
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: allfeats-win
+          path: |
+            dist/orca-windows-setup.exe
+            dist/orca-windows-setup.exe.blockmap
+            dist/latest.yml
+          if-no-files-found: error
+
+  build-mac:
+    needs: version
+    runs-on: macos-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+    env:
+      ORCA_BUILD_COMMIT: ${{ github.sha }}
+      # No signing identity on this runner; electron-builder skips codesign.
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Setup pnpm
+        uses: pnpm/setup@v2
+        with:
+          install: false
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            mobile/pnpm-lock.yaml
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+      - name: Install mobile dependencies
+        uses: ./.github/actions/install-mobile-dependencies
+      - name: Build the app
+        shell: bash
+        run: pnpm run build:desktop
+      - name: Build mac native helpers
+        shell: bash
+        run: |
+          pnpm run build:computer-macos
+          pnpm run build:keyboard-layout-macos
+          pnpm run build:process-footprint-macos
+          pnpm run build:notification-status-macos
+          pnpm run ensure:electron-runtime
+      - name: Package macOS app
+        shell: bash
+        env:
+          ORCA_LOCAL_BUILD_VERSION: ${{ needs.version.outputs.version }}
+        run: pnpm exec electron-builder --config config/electron-builder.config.cjs --mac --publish never
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: allfeats-mac
+          path: |
+            dist/*.dmg
+            dist/*.zip
+            dist/*.blockmap
+            dist/latest-mac.yml
+          if-no-files-found: error
+
+  release:
+    needs: [version, build-win, build-mac]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.version.outputs.tag }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - name: Publish the release
+        shell: bash
+        run: |
+          set -euo pipefail
+          notes="allfeats-notes.md"
+          {
+            echo "## Orca AllFeats $TAG"
+            echo
+            echo "Personal build of all-feats @ $GITHUB_SHA."
+            echo
+            echo '- Windows: unsigned `orca-windows-setup.exe` (SmartScreen may warn; choose "Run anyway")'
+            echo '- macOS arm64: unsigned `orca-macos-arm64.dmg` (right-click the app, then Open, on first launch)'
+          } > "$notes"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" release/* --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "Orca AllFeats $TAG" --notes-file "$notes"
+          fi
