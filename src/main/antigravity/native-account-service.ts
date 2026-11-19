@@ -1,16 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import type { AntigravityAccountState } from '../../shared/antigravity-account-types'
+import type { AntigravityAccountState } from '../../shared/agent-accounts/antigravity/antigravity-account-types'
 import type {
   AntigravityAccountUsage,
   ProviderRateLimits,
   RateLimitRuntimeTarget
-} from '../../shared/rate-limit-types'
+} from '../../shared/agent-usage/rate-limits/rate-limit-types'
 import {
   ANTIGRAVITY_USAGE_HOST_TARGET,
   type AntigravityUsageLogin,
   type AntigravityUsageReadFinish,
   type AntigravityUsageReadStart
-} from '../rate-limits/antigravity-account-usage'
+} from '../rate-limits/providers/antigravity/antigravity-account-usage'
 import {
   antigravityUsageLogin,
   storedAntigravityReading,
@@ -21,6 +21,7 @@ import {
   type AntigravityNativeCredential
 } from './native-credential-codec'
 import { fetchGoogleIdentity } from './google-userinfo-identity'
+import { AntigravityRewrittenLoginIdentity } from './native-account-rewritten-login'
 import type {
   AntigravityAccountStore,
   AntigravityAccountVault,
@@ -54,6 +55,9 @@ function matches(
 
 export class AntigravityAccountService {
   private mutation: Promise<unknown> = Promise.resolve()
+  private readonly rewrittenLogins = new AntigravityRewrittenLoginIdentity(
+    () => this.lookupIdentity
+  )
 
   constructor(
     private readonly store: AntigravityAccountStore,
@@ -236,7 +240,11 @@ export class AntigravityAccountService {
   }
 
   private async reconcile(selectedId?: string) {
-    const current = await this.backend.read()
+    const current = await this.rewrittenLogins.identify(
+      await this.backend.read(),
+      this.store.read().accounts,
+      (account, login) => this.matches(account, login)
+    )
     // Re-read after native I/O so a delayed read never restores an older vault.
     const vault = this.store.read()
     if (selectedId !== undefined) {

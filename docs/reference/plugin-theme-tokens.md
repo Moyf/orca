@@ -50,14 +50,14 @@ Every key an app theme may set in `tokens` (see [plugin themes](plugin-themes.md
 | `--tab-bar` | Strip behind tabs, including the title bar when tabs sit in it | no | same as `--card` |
 | `--tab-active` | Active tab | no | light: same as `--tab-bar`; dark: `--foreground` mixed 6% into `--tab-bar` |
 | `--tab-active-foreground` | Active tab text, and inactive tab text on hover | no | same as `--foreground` |
-| `--tab-active-indicator` | Line under the active tab | no | same as `--tab-active-foreground` |
+| `--tab-active-indicator` | Line marking the active tab and the active right sidebar tool | no | tab line: same as `--tab-active-foreground`; right sidebar tool line: same as `--foreground` |
 | `--tab-inactive` | Inactive tabs | no | light: `--foreground` mixed 4% into `--tab-bar`; dark: same as `--tab-bar` |
 | `--tab-inactive-foreground` | Inactive tab text | no | same as `--muted-foreground` |
 | `--split-divider` | Divider between split tab groups | no | Orca's built-in color |
 | `--split-divider-hover` | Split divider while hovered or dragged | no | Orca's built-in color |
-| `--chat-foreground-strong` | Chat headings and other emphasized text | no | light: `--foreground` mixed 92% into `--chat-canvas`; dark: `--foreground` mixed 90% into `--chat-canvas` |
+| `--chat-foreground-strong` | Chat headings and other emphasized text | no | `--foreground` mixed 98% into `--chat-canvas` |
 | `--chat-user-message` | Your messages in chat; may be translucent, it paints over the chat | no | `--foreground` mixed lightly into the chat background |
-| `--chat-bold-foreground` | Bold text in chat messages | no | the color of chat headings |
+| `--chat-bold-foreground` | Bold text in chat messages | no | the chat text color around it |
 | `--chat-muted-foreground` | Secondary chat text: tool rows, status lines, timestamps and hunk headers | no | `--muted-foreground` as chat paints it |
 | `--chat-inline-code` | Inline code in chat; may be translucent, it paints over the chat | no | `--foreground` mixed lightly into the chat background |
 | `--chat-inline-code-foreground` | Inline code text in chat | no | `--foreground` mixed 85% into the chat background |
@@ -67,6 +67,7 @@ Every key an app theme may set in `tokens` (see [plugin themes](plugin-themes.md
 | `--chat-highlight` | Highlighted (`==text==`) text in chat; may be translucent, it paints over the chat | no | `--text-link` (else Orca's link blue) mixed 35% light and 45% dark into the chat background |
 | `--chat-highlight-foreground` | Text on `--chat-highlight` | no | same as `--chat-foreground-strong` |
 | `--text-link` | Links in Markdown previews, editors and agent chat | no | Orca's built-in color |
+| `--editor-selection` | Selected text in the code editor; keep it translucent so find matches show through. An unfocused editor shows it at half its opacity | no | `--ring` at 30% opacity |
 | `--diff-added` | Added-line hue: Monaco overview ruler and chat diff text | no | same as `--git-decoration-added` |
 | `--diff-added-background` | Added lines in diffs | no | light: `--diff-added` at 13% opacity; dark: `--diff-added` at 16% opacity |
 | `--diff-added-emphasis` | Added characters within a changed line | no | light: `--diff-added` at 15% opacity; dark: `--diff-added` at 20% opacity |
@@ -85,7 +86,7 @@ Every key an app theme may set in `tokens` (see [plugin themes](plugin-themes.md
 
 ## Frame CSS variables
 
-Panel and custom editor frames get these stable variables, set from Orca's active theme and updated in place when it changes. Other tokens are not exposed to frames.
+Panel and custom editor frames get these stable variables, set from Orca's active theme and fonts and updated in place when they change. Other tokens are not exposed to frames.
 
 | Variable | Orca token |
 | --- | --- |
@@ -109,3 +110,5 @@ Panel and custom editor frames get these stable variables, set from Orca's activ
 | `--orca-input` | `--input` |
 | `--orca-ring` | `--ring` |
 | `--orca-radius` | `--radius` |
+| `--orca-font-sans` | `--font-sans` |
+| `--orca-font-mono` | `--font-mono` |
