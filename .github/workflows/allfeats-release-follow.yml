@@ -210,3 +210,10 @@ jobs:
             echo
             echo "Release will appear at: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/allfeats-v$target"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Why explicit: a tag pushed with GITHUB_TOKEN does not trigger other workflows,
+      # so AllFeats Build would never fire on its own.
+      - name: Trigger AllFeats Build
+        if: steps.version.outcome == 'success'
+        shell: bash
+        run: gh workflow run allfeats-build.yml --repo "$GITHUB_REPOSITORY" --ref "allfeats-v${{ steps.target.outputs.version }}"
