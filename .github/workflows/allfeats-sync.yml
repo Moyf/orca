@@ -1,0 +1,186 @@
+name: AllFeats Sync
+
+# Daily auto-merge of stablyai/orca main into all-feats. This file must stay on the
+# default branch for the cron to fire; keep an identical copy on all-feats.
+# A clean sync pushes the merge and aligns package.json with the upstream stable
+# version. Conflicts or red typecheck open an issue and stop. Releases stay manual:
+# push an allfeats-v* tag and AllFeats Build takes over.
+
+on:
+  schedule:
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: allfeats-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout all-feats
+        uses: actions/checkout@v6
+        with:
+          ref: all-feats
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/stablyai/orca
+          git fetch upstream main --quiet
+          count=$(git rev-list --count HEAD..upstream/main)
+          echo "new_commits=$count" >> "$GITHUB_ENV"
+          echo "Upstream has $count new commit(s)."
+
+      - name: Report nothing to sync
+        if: env.new_commits == '0'
+        shell: bash
+        run: echo "Upstream main has no new commits; all-feats is current." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Merge upstream/main
+        id: merge
+        if: env.new_commits != '0'
+        shell: bash
+        run: |
+          set -uo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git merge upstream/main --no-edit -m "Merge upstream/main into all-feats (auto-sync)"; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only --diff-filter=U > conflicted.txt || true
+            git merge --abort
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open an issue on conflicts
+        if: steps.merge.outputs.merged == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          open_issues=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "allfeats-sync in:title" --json number --jq 'length')
+          if [ "$open_issues" != "0" ]; then
+            echo "An open allfeats-sync issue already exists; not duplicating."
+            exit 1
+          fi
+          {
+            echo "## Upstream merge conflicts"
+            echo
+            echo "Auto-sync of stablyai/orca main into all-feats hit conflicts; resolved nothing."
+            echo
+            echo '```'
+            cat conflicted.txt
+            echo '```'
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > issue-body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "[allfeats-sync] upstream merge conflicts need manual resolution" \
+            --body-file issue-body.md
+          exit 1
+
+      - name: Setup pnpm
+        if: steps.merge.outputs.merged == 'true'
+        uses: pnpm/setup@v2
+        with:
+          install: false
+
+      - name: Setup Node.js
+        if: steps.merge.outputs.merged == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        if: steps.merge.outputs.merged == 'true'
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        id: typecheck
+        if: steps.merge.outputs.merged == 'true'
+        shell: bash
+        run: |
+          pnpm tc > typecheck.log 2>&1
+          code=$?
+          tail -60 typecheck.log > typecheck-tail.txt
+          exit $code
+
+      - name: Open an issue on red typecheck
+        if: failure() && steps.merge.outputs.merged == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          open_issues=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "allfeats-sync in:title" --json number --jq 'length')
+          if [ "$open_issues" != "0" ]; then
+            echo "An open allfeats-sync issue already exists; not duplicating."
+            exit 1
+          fi
+          {
+            echo "## Typecheck failed after the upstream merge"
+            echo
+            echo '```'
+            cat typecheck-tail.txt
+            echo '```'
+            echo
+            echo "The merge commit is NOT pushed; all-feats stays on the last green state."
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > issue-body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "[allfeats-sync] typecheck red after upstream merge" \
+            --body-file issue-body.md
+          exit 1
+
+      - name: Align version with upstream stable
+        id: version
+        if: steps.typecheck.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          upstream_version=$(gh api repos/stablyai/orca/releases/latest --jq '.tag_name' | sed 's/^v//')
+          current=$(node -p "require('./package.json').version")
+          higher=$(printf '%s\n%s\n' "$current" "$upstream_version" | sort -V | tail -1)
+          if [ "$higher" = "$current" ]; then
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+            echo "package.json ($current) already at or above upstream stable ($upstream_version)."
+          else
+            node -e "const fs=require('fs');fs.writeFileSync('package.json',fs.readFileSync('package.json','utf8').replace('\"version\": \"$current\"','\"version\": \"$upstream_version\"'))"
+            git add package.json
+            git commit -m "chore: align version with upstream stable $upstream_version (auto-sync)"
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+            echo "bumped_to=$upstream_version" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push
+        if: steps.version.outcome == 'success'
+        shell: bash
+        env:
+          PUSH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git push "https://x-access-token:$PUSH_TOKEN@github.com/$GITHUB_REPOSITORY" HEAD:all-feats
+          {
+            echo "## Sync complete"
+            echo
+            echo "- Merged ${new_commits:-?} upstream commit(s)."
+            if [ "${{ steps.version.outputs.bumped }}" = "true" ]; then
+              echo "- Version aligned to upstream stable: ${{ steps.version.outputs.bumped_to }}"
+            fi
+            echo
+            echo "To release: push tag \`allfeats-v\$(node -p \"require('./package.json').version\")\`."
+          } >> "$GITHUB_STEP_SUMMARY"
