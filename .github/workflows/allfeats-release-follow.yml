@@ -9,7 +9,9 @@ name: AllFeats Release Follow
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    # Off-peak minutes: GitHub docs warn that :00 and :30 schedule slots are
+    # the most delayed and dropped under load.
+    - cron: '11,41 * * * *'
   workflow_dispatch:
 
 permissions:
