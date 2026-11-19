@@ -1,0 +1,210 @@
+name: AllFeats Release Follow
+
+# When stablyai/orca publishes a new stable desktop release, mirror it: merge
+# upstream main into all-feats, align package.json with the release version, and
+# push an allfeats-v* tag so AllFeats Build packages and publishes it.
+# Shares the allfeats-sync concurrency group so the daily sync and this run
+# serialize instead of racing on all-feats. This file must stay on the default
+# branch for the cron to fire; keep an identical copy on all-feats.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: allfeats-sync
+  cancel-in-progress: false
+
+jobs:
+  follow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Resolve the upstream stable version
+        id: target
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The newest stable desktop release; /releases/latest would also match
+          # a future stable non-desktop tag like android-v*.
+          version=$(gh api 'repos/stablyai/orca/releases?per_page=30' \
+            --jq '[.[] | select(.draft == false and .prerelease == false and (.tag_name | test("^v[0-9]+\\.[0-9]+\\.[0-9]+$")))][0].tag_name' \
+            | sed 's/^v//')
+          if [ -z "$version" ]; then
+            echo "::error::Found no stable desktop release on stablyai/orca."
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Upstream stable release: v$version"
+
+      - name: Checkout all-feats
+        uses: actions/checkout@v6
+        with:
+          ref: all-feats
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Skip when already following
+        id: gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --tags origin "refs/tags/allfeats-v${{ steps.target.outputs.version }}" | grep -q "refs/tags"; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Report already following
+        if: steps.gate.outputs.already == 'true'
+        shell: bash
+        run: echo "allfeats-v${{ steps.target.outputs.version }} already exists; nothing to follow." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fetch upstream
+        if: steps.gate.outputs.already == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/stablyai/orca
+          git fetch upstream main --quiet
+
+      - name: Merge upstream/main
+        id: merge
+        if: steps.gate.outputs.already == 'false'
+        shell: bash
+        run: |
+          set -uo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git merge upstream/main --no-edit -m "Merge upstream/main into all-feats (release follow v${{ steps.target.outputs.version }})"; then
+            echo "merged=true" >> "$GITHUB_OUTPUT"
+          else
+            git diff --name-only --diff-filter=U > conflicted.txt || true
+            git merge --abort
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open an issue on conflicts
+        if: steps.merge.outputs.merged == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          open_issues=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "allfeats-sync in:title" --json number --jq 'length')
+          if [ "$open_issues" != "0" ]; then
+            echo "An open allfeats-sync issue already exists; not duplicating."
+            exit 1
+          fi
+          {
+            echo "## Upstream merge conflicts (release follow v${{ steps.target.outputs.version }})"
+            echo
+            echo "Auto-sync of stablyai/orca main into all-feats hit conflicts; nothing was pushed."
+            echo
+            echo '```'
+            cat conflicted.txt
+            echo '```'
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > issue-body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "[allfeats-sync] upstream merge conflicts need manual resolution" \
+            --body-file issue-body.md
+          exit 1
+
+      - name: Setup pnpm
+        if: steps.merge.outputs.merged == 'true'
+        uses: pnpm/setup@v2
+        with:
+          install: false
+
+      - name: Setup Node.js
+        if: steps.merge.outputs.merged == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          check-latest: true
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        if: steps.merge.outputs.merged == 'true'
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        id: typecheck
+        if: steps.merge.outputs.merged == 'true'
+        shell: bash
+        run: |
+          pnpm tc > typecheck.log 2>&1
+          code=$?
+          tail -60 typecheck.log > typecheck-tail.txt
+          exit $code
+
+      - name: Open an issue on red typecheck
+        if: failure() && steps.merge.outputs.merged == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          open_issues=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "allfeats-sync in:title" --json number --jq 'length')
+          if [ "$open_issues" != "0" ]; then
+            echo "An open allfeats-sync issue already exists; not duplicating."
+            exit 1
+          fi
+          {
+            echo "## Typecheck failed before following release v${{ steps.target.outputs.version }}"
+            echo
+            echo '```'
+            cat typecheck-tail.txt
+            echo '```'
+            echo
+            echo "The merge commit is NOT pushed and no tag was cut; all-feats stays on the last green state."
+            echo
+            echo "Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } > issue-body.md
+          gh issue create --repo "$GITHUB_REPOSITORY" \
+            --title "[allfeats-sync] typecheck red after upstream merge" \
+            --body-file issue-body.md
+          exit 1
+
+      - name: Align version with the release
+        if: steps.typecheck.outcome == 'success'
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          target='${{ steps.target.outputs.version }}'
+          current=$(node -p "require('./package.json').version")
+          if [ "$current" = "$target" ]; then
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+            echo "package.json already at $target."
+            exit 0
+          fi
+          node -e "const fs=require('fs');fs.writeFileSync('package.json',fs.readFileSync('package.json','utf8').replace('\"version\": \"$current\"','\"version\": \"$target\"'))"
+          git add package.json
+          git commit -m "chore: align version with upstream stable $target (release follow)"
+          echo "bumped=true" >> "$GITHUB_OUTPUT"
+
+      - name: Push the branch and the release tag
+        if: steps.version.outcome == 'success'
+        shell: bash
+        env:
+          PUSH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          target='${{ steps.target.outputs.version }}'
+          git tag "allfeats-v$target"
+          git push "https://x-access-token:$PUSH_TOKEN@github.com/$GITHUB_REPOSITORY" HEAD:all-feats "allfeats-v$target"
+          {
+            echo "## Following upstream v$target"
+            echo
+            echo "Tag \`allfeats-v$target\` pushed; AllFeats Build is packaging Win + Mac."
+            echo
+            echo "Release will appear at: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/allfeats-v$target"
+          } >> "$GITHUB_STEP_SUMMARY"
