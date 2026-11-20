@@ -17,6 +17,10 @@ on:
 permissions:
   contents: write
   issues: write
+  # Upstream merges can carry .github/workflows changes; pushes without this are rejected.
+  workflows: write
+  # The post-push step disables upstream workflows the merge re-activated.
+  actions: write
 
 concurrency:
   group: allfeats-sync
@@ -210,6 +214,18 @@ jobs:
             echo
             echo "Release will appear at: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/allfeats-v$target"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # Why: upstream merges re-activate their workflows on this fork; only ours should run.
+      - name: Quiet upstream workflows
+        if: steps.version.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ids=$(gh api repos/Moyf/orca/actions/workflows --paginate \
+            --jq '.workflows[] | select(.state == "active" and ((.path | startswith(".github/workflows/allfeats-")) | not)) | .id')
+          for id in $ids; do
+            gh api -X PUT "repos/Moyf/orca/actions/workflows/$id/disable" && echo "disabled workflow $id"
+          done
 
       # Why explicit: a tag pushed with GITHUB_TOKEN does not trigger other workflows,
       # so AllFeats Build would never fire on its own.
