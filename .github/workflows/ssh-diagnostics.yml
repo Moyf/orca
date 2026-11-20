@@ -1,0 +1,28 @@
+name: SSH Key Diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Offer the deploy key to GitHub SSH verbosely
+        shell: bash
+        env:
+          DEPLOY_KEY: ${{ secrets.ALLFEATS_DEPLOY_KEY }}
+        run: |
+          set -uo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          echo "=== fingerprint of loaded key ==="
+          ssh-keygen -lf ~/.ssh/id_ed25519
+          echo "=== verbose SSH negotiation ==="
+          ssh -Tv -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes git@github.com 2>&1 | grep -E 'Offering|Server accepts|deny|denied|Authenticated|identity file|publickey|debug1: Connecting|successful' || true
+          echo "=== full tail ==="
+          ssh -Tv -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes -o BatchMode=yes git@github.com 2>&1 | tail -25 || true
