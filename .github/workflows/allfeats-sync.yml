@@ -14,8 +14,6 @@ on:
 permissions:
   contents: write
   issues: write
-  # Upstream merges can carry .github/workflows changes; pushes without this are rejected.
-  workflows: write
   # The post-push step disables upstream workflows the merge re-activated.
   actions: write
 
@@ -170,14 +168,20 @@ jobs:
             echo "bumped_to=$upstream_version" >> "$GITHUB_OUTPUT"
           fi
 
+      # Why a deploy key: GITHUB_TOKEN can never push commits that touch .github/workflows,
+      # and its pushes do not trigger other workflows. The key does both.
       - name: Push
         if: steps.version.outcome == 'success'
         shell: bash
         env:
-          PUSH_TOKEN: ${{ github.token }}
+          DEPLOY_KEY: ${{ secrets.ALLFEATS_DEPLOY_KEY }}
         run: |
           set -euo pipefail
-          git push "https://x-access-token:$PUSH_TOKEN@github.com/$GITHUB_REPOSITORY" HEAD:all-feats
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+          git push "git@github.com:$GITHUB_REPOSITORY.git" HEAD:all-feats
           {
             echo "## Sync complete"
             echo

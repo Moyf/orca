@@ -17,8 +17,6 @@ on:
 permissions:
   contents: write
   issues: write
-  # Upstream merges can carry .github/workflows changes; pushes without this are rejected.
-  workflows: write
   # The post-push step disables upstream workflows the merge re-activated.
   actions: write
 
@@ -201,12 +199,19 @@ jobs:
         if: steps.version.outcome == 'success'
         shell: bash
         env:
-          PUSH_TOKEN: ${{ github.token }}
+          DEPLOY_KEY: ${{ secrets.ALLFEATS_DEPLOY_KEY }}
         run: |
           set -euo pipefail
           target='${{ steps.target.outputs.version }}'
+          # Why a deploy key: GITHUB_TOKEN can never push commits that touch
+          # .github/workflows, and its pushes do not trigger other workflows.
+          # The key does both, so the tag push fires AllFeats Build on its own.
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
           git tag "allfeats-v$target"
-          git push "https://x-access-token:$PUSH_TOKEN@github.com/$GITHUB_REPOSITORY" HEAD:all-feats "allfeats-v$target"
+          git push "git@github.com:$GITHUB_REPOSITORY.git" HEAD:all-feats "allfeats-v$target"
           {
             echo "## Following upstream v$target"
             echo
@@ -226,10 +231,3 @@ jobs:
           for id in $ids; do
             gh api -X PUT "repos/Moyf/orca/actions/workflows/$id/disable" && echo "disabled workflow $id"
           done
-
-      # Why explicit: a tag pushed with GITHUB_TOKEN does not trigger other workflows,
-      # so AllFeats Build would never fire on its own.
-      - name: Trigger AllFeats Build
-        if: steps.version.outcome == 'success'
-        shell: bash
-        run: gh workflow run allfeats-build.yml --repo "$GITHUB_REPOSITORY" --ref "allfeats-v${{ steps.target.outputs.version }}"
