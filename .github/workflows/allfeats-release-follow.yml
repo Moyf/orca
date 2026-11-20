@@ -209,9 +209,12 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
+          # The fingerprint proves which key the runner offers against the one registered.
+          ssh-keygen -lf ~/.ssh/id_ed25519 || true
           ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
           git tag "allfeats-v$target"
-          git push "git@github.com:$GITHUB_REPOSITORY.git" HEAD:all-feats "allfeats-v$target"
+          GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes' \
+            git push "git@github.com:$GITHUB_REPOSITORY.git" HEAD:all-feats "allfeats-v$target"
           {
             echo "## Following upstream v$target"
             echo
