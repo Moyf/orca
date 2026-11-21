@@ -9,17 +9,22 @@ import type { ConnectorFailure } from '../../shared/connectors/connector-cloud-c
 import type { ConnectorWorkLink } from '../../shared/connector-work-link-contract'
 import type { ConnectorReplyJournal } from '../connector-cloud/connector-reply-outbox'
 import { capAnswer } from '../connector-cloud/connector-snapshot'
+import { agentJournalSubmissionKey } from '../../shared/agent-session/journal/agent-session-journal-item-key'
 
 export type EndedTurnReplies = {
   sessionId: string
   turnItemId: string
   /** The deliveries the turn answered, opener first (connectorReplyTurnStamps). */
   stamps: readonly AgentJournalConnectorDelivery[]
+  /** The turn's opening message: a continuation fills only the rows its admission claimed. */
+  openerItemId?: string
   outcome: AgentJournalTurnOutcome
   prose: string
   bot: boolean
   failure?: ConnectorFailure
   links: ConnectorWorkLink[]
+  /** How long the turn ran; absent when its start predates this watch. */
+  tookMs?: number
 }
 
 /** Fills an ended turn's outbox rows (design item 125 §3), the first fill winning. */
@@ -62,22 +67,38 @@ export function conversationReplyFill(
       prose: turn.prose,
       bot: turn.bot
     })
-    // The earliest unfilled row per conversation keys the answer.
+    // The group's head keys its answer: its earliest stamp per conversation, filled or sent or not,
+    // so a partial fill or a deleted row never moves the key.
     const answers = new Map<string, string>()
+    for (const stamp of turn.stamps) {
+      const conversation = JSON.stringify([stamp.account, stamp.conversation])
+      if (!answers.has(conversation)) {
+        answers.set(conversation, stamp.deliveryId)
+      }
+    }
     const fills: JournalConnectorReplyFill[] = []
     for (const row of rows.filter((candidate) => !candidate.fill)) {
+      // A row a continuation claimed is that continuation's turn's to fill; one a cut still owes is
+      // its continuation's or its close's.
+      const claimedHere =
+        row.claimMessageId !== undefined &&
+        agentJournalSubmissionKey(row.claimMessageId) === turn.openerItemId
+      if ((row.claimMessageId !== undefined && !claimedHere) || (!claimedHere && row.cut)) {
+        continue
+      }
       const conversation = JSON.stringify([row.account, row.conversation])
       const answerDeliveryId = answers.get(conversation) ?? row.deliveryId
-      answers.set(conversation, answerDeliveryId)
       fills.push({
         account: row.account,
         deliveryId: row.deliveryId,
+        ...(claimedHere ? { expect: { claimMessageId: row.claimMessageId! } } : {}),
         outcome,
         answerDeliveryId,
         turnItemId: turn.turnItemId,
         ...(prose ? { prose: capAnswer(prose, JOURNAL_CONNECTOR_REPLY_PROSE_BYTES) } : {}),
         ...(outcome === 'failed' && turn.failure ? { failure: turn.failure } : {}),
-        ...(turn.links.length > 0 ? { links: turn.links } : {})
+        ...(turn.links.length > 0 ? { links: turn.links } : {}),
+        ...(outcome === 'answered' && turn.tookMs !== undefined ? { tookMs: turn.tookMs } : {})
       })
     }
     if (await store.fillOutcomes(fills)) {
