@@ -71,6 +71,7 @@ export const PLUGIN_APP_THEME_TOKENS = [
   '--chat-highlight',
   '--chat-highlight-foreground',
   '--text-link',
+  '--theme-accent-foreground',
   '--editor-selection',
   '--diff-added',
   '--diff-added-background',
