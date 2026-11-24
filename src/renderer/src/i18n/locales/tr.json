@@ -24479,7 +24479,6 @@
       "paste": {
         "remoteSignIn": "Uzaktan oturum açma"
       },
-      "allApps": "Tüm uygulamalar",
       "composio": {
         "withComposio": "Composio ile"
       },
@@ -24507,7 +24506,6 @@
           "usWest": "Batı ABD"
         }
       },
-      "onBot": "{{bot}} üzerinde",
       "line": {
         "vercel": "Dağıtımları kontrol edin ve günlüklerini okuyun",
         "sentry": "Hataları ve arkalarındaki olayları inceleyin",
@@ -24686,7 +24684,7 @@
       "controlOne": "{{person}}, {{name}} botunu kullanarak {{computer}} üzerinde sizin adınıza çalışabilir: komut çalıştırabilir, dosyaları açıp değiştirebilir ve bağlı hesaplarınızı kullanabilir.",
       "executionComputer": "bu ajanın çalıştığı bilgisayar",
       "here": "burada",
-      "reachSlack": "Slack'te @{{name}} olarak mesaj gönderme",
+      "reachSlack": "Slack'te {{name}} olarak mesaj gönderme",
       "reject": "Reddet",
       "there": "orada",
       "thisComputer": "bu bilgisayar",
@@ -24701,7 +24699,10 @@
       "paused": "Duraklatıldı",
       "resumeShort": "Devam ettir",
       "runNow": "Şimdi çalıştır",
-      "running": "Çalışıyor"
+      "running": "Çalışıyor",
+      "deleting": "Siliniyor…",
+      "deleteFailed": "{{name}} silinemedi",
+      "deleteDescription": "<name/> ve çalıştırma geçmişini sil."
     },
     "cloudSignIn": {
       "eventsHostChat": "{{source}} olayları için {{host}} üzerinde Orca Cloud oturumu açılması gerekiyor. Oturum açıldığında bu kuralı kaydedeceğim.",

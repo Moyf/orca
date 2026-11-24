@@ -24027,8 +24027,6 @@
       "composio": {
         "withComposio": "透過 Composio"
       },
-      "allApps": "所有應用程式",
-      "onBot": "在 {{bot}} 上",
       "mcp": {
         "addTitle": "新增 {{app}}",
         "advanced": "進階",
@@ -24230,7 +24228,10 @@
       "runNow": "立即執行",
       "openOnPage": "在「自動化」頁面開啟",
       "pauseShort": "暫停",
-      "resumeShort": "繼續"
+      "resumeShort": "繼續",
+      "deleting": "正在刪除…",
+      "deleteFailed": "無法刪除 {{name}}",
+      "deleteDescription": "刪除 <name/> 及其執行歷程。"
     },
     "access": {
       "thisComputer": "此電腦",
@@ -24251,7 +24252,7 @@
       "controlBriefIfAdded": "你新增的任何人都可以在這裡以你的身份操作。",
       "controlBriefOnHost": "他們可以在 {{computer}} 上以你的身份操作。",
       "controlBriefIfAddedOnHost": "你新增的任何人都可以在 {{computer}} 上以你的身份操作。",
-      "reachSlack": "以 @{{name}} 身份在 Slack 傳送訊息",
+      "reachSlack": "以 {{name}} 身份在 Slack 傳送訊息",
       "here": "這裡",
       "thisServer": "此伺服器",
       "there": "那裡",

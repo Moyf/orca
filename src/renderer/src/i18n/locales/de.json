@@ -24363,8 +24363,6 @@
       "composio": {
         "withComposio": "Mit Composio"
       },
-      "allApps": "Alle Apps",
-      "onBot": "Bei {{bot}}",
       "mcp": {
         "addTitle": "{{app}} hinzufügen",
         "advanced": "Erweitert",
@@ -24566,7 +24564,10 @@
       "runNow": "Jetzt ausführen",
       "openOnPage": "Auf der Seite Automatisierungen öffnen",
       "pauseShort": "Pausieren",
-      "resumeShort": "Fortsetzen"
+      "resumeShort": "Fortsetzen",
+      "deleting": "Wird gelöscht…",
+      "deleteFailed": "{{name}} konnte nicht gelöscht werden",
+      "deleteDescription": "<name/> und den Ausführungsverlauf löschen."
     },
     "access": {
       "thisComputer": "diesem Computer",
@@ -24587,7 +24588,7 @@
       "controlBriefIfAdded": "Alle, die du hinzufügst, können hier in deinem Namen handeln.",
       "controlBriefOnHost": "Sie können auf {{computer}} in deinem Namen handeln.",
       "controlBriefIfAddedOnHost": "Alle, die du hinzufügst, können auf {{computer}} in deinem Namen handeln.",
-      "reachSlack": "Als @{{name}} in Slack posten",
+      "reachSlack": "Als {{name}} in Slack posten",
       "here": "hier",
       "thisServer": "diesem Server",
       "there": "dort",

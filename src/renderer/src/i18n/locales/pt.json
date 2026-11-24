@@ -25471,7 +25471,6 @@
       "paste": {
         "remoteSignIn": "Login remoto"
       },
-      "allApps": "Todos os apps",
       "composio": {
         "withComposio": "Com Composio"
       },
@@ -25499,7 +25498,6 @@
           "usWest": "Oeste dos EUA"
         }
       },
-      "onBot": "Em {{bot}}",
       "line": {
         "vercel": "Verifique implantações e leia os logs delas",
         "sentry": "Investigue erros e os eventos por trás deles",
@@ -25683,7 +25681,7 @@
       "controlOne": "{{person}} pode usar {{name}} para trabalhar em {{computer}} como você: executar comandos, abrir e alterar arquivos e usar suas contas conectadas.",
       "executionComputer": "o computador em que este agente é executado",
       "here": "aqui",
-      "reachSlack": "Postar no Slack como @{{name}}",
+      "reachSlack": "Postar no Slack como {{name}}",
       "reject": "Rejeitar",
       "there": "lá",
       "thisComputer": "este computador",
@@ -25698,7 +25696,10 @@
       "paused": "Pausada",
       "resumeShort": "Retomar",
       "runNow": "Executar agora",
-      "running": "Em execução"
+      "running": "Em execução",
+      "deleting": "Excluindo…",
+      "deleteFailed": "Não foi possível excluir {{name}}",
+      "deleteDescription": "Excluir <name/> e seu histórico de execuções."
     },
     "cloudSignIn": {
       "eventsHostChat": "Eventos do {{source}} exigem que {{host}} esteja conectado ao Orca Cloud. Vou salvar esta regra assim que estiver.",
