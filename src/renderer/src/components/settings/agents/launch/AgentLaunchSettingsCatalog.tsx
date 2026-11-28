@@ -8,7 +8,7 @@ import {
   savedChatPermissionMode
 } from '../../../../../../shared/agent-launch/permissions/agent-chat-permission-support'
 import { useChatProgramFacts } from '@/lib/agent-session/launch/inventory/host-chat-program-acquisition'
-import { useMemo } from 'react'
+import { useMemo, useReducer } from 'react'
 import { recomputeOn } from '@/lib/recompute-on'
 import type {
   AgentLaunchSettings,
@@ -117,7 +117,8 @@ export function AgentLaunchSettingsCatalog({
     detectionTarget.kind === 'runtime'
       ? { kind: 'git-worktree' as const, runtimeEnvironmentId: detectionTarget.environmentId }
       : { kind: 'floating' as const }
-  useChatProgramFacts(workspace, detectionTarget.kind !== 'ssh')
+  const [chatRefreshVersion, retryChatInventory] = useReducer((version) => version + 1, 0)
+  useChatProgramFacts(workspace, detectionTarget.kind !== 'ssh', chatRefreshVersion)
   const chosen = settings.defaultTuiAgent
   // The saved default reads as available where it opens as a chat without its CLI.
   const defaultOpensAsChat = useAppStateValueWithHostStatuses((appState, statuses) => {
@@ -376,6 +377,7 @@ export function AgentLaunchSettingsCatalog({
         activeServerName={hostName}
         onRefresh={() => {
           void refresh()
+          retryChatInventory()
           refreshSettings?.()
         }}
         getRowProps={rowProps}

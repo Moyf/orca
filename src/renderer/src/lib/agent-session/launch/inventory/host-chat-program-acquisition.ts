@@ -65,7 +65,11 @@ export function holdChatProgramFacts(context: ReturnType<typeof resolveChatProgr
   return { catalog, first, release }
 }
 
-export function useChatProgramFacts(workspace: ProspectiveWorkspace, active = true): void {
+export function useChatProgramFacts(
+  workspace: ProspectiveWorkspace,
+  active = true,
+  refreshVersion = 0
+): void {
   const viewActive = useAppStateViewActive()
   useChatProgramFactsVersion()
   // Hidden worktrees' tab bars stay mounted; resolving per store write there is wasted work.
@@ -80,7 +84,7 @@ export function useChatProgramFacts(workspace: ProspectiveWorkspace, active = tr
       : undefined
     // The descriptor covers all owner inputs; resource notifications do not reopen a live lease.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, active, viewActive])
+  }, [key, active, viewActive, refreshVersion])
 }
 
 /** Listing and selected-entry readiness are separate; null preserves pending-inventory fallback. */
