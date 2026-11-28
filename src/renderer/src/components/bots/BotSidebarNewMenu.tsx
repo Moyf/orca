@@ -46,7 +46,7 @@ export function BotSidebarNewMenu({
 }): React.JSX.Element {
   const t = useTranslate()
   const newBotLabel = t('bots.section.newBot', 'New bot')
-  const newLabel = t('bots.section.new', 'New bot, group, or folder')
+  const newLabel = t('bots.section.new', 'New bot, group chat, or folder')
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange}>
       <Tooltip>
@@ -119,7 +119,7 @@ export function BotSidebarNewMenu({
         <DropdownMenuItem disabled={!canCreateGroup} onSelect={onNewGroup}>
           <span className={BOT_MENU_ROW}>
             <Users className="size-3.5" />
-            {t('bots.groups.newGroup', 'New group')}
+            {t('bots.groups.newGroup', 'New group chat')}
           </span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

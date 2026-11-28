@@ -13,7 +13,7 @@ export function useBotGroupDelete(): (group: BotGroup) => Promise<boolean> {
     const confirmed = await confirm({
       title: t('bots.groups.deleteTitle', 'Delete {{name}}?', { name: group.name }),
       description: t('bots.groups.deleteDescription', 'Its bots are not deleted.'),
-      confirmLabel: t('bots.groups.deleteConfirm', 'Delete group'),
+      confirmLabel: t('bots.groups.deleteConfirm', 'Delete group chat'),
       confirmVariant: 'destructive'
     })
     if (!confirmed) {

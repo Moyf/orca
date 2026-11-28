@@ -111,7 +111,7 @@ export function RepoHeaderProjectActionsMenuContent({
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
             <FolderInput className="size-3.5" />
-            {t('auto.components.sidebar.WorktreeList.4a08fb55f2', 'Move to group')}
+            {t('auto.components.sidebar.WorktreeList.4a08fb55f2', 'Move to project group')}
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             {projectGroups.map((group) => (

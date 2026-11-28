@@ -210,11 +210,11 @@ export function BotGroupMembersDialog({
           <DialogTitle size={group ? 'default' : 'compact'} className={group ? undefined : 'mr-6'}>
             {group
               ? t('bots.groups.manageMembers', 'Manage members')
-              : t('bots.groups.newGroup', 'New group')}
+              : t('bots.groups.newGroup', 'New group chat')}
           </DialogTitle>
           {group ? (
             <DialogDescription>
-              {t('bots.groups.dialogDescription', 'Bots in a group share one room.')}
+              {t('bots.groups.dialogDescription', 'Bots in a group chat share one room.')}
             </DialogDescription>
           ) : null}
         </DialogHeader>
@@ -343,7 +343,7 @@ export function BotGroupMembersDialog({
                 })
               }
             >
-              {t('bots.groups.deleteGroup', 'Delete group')}
+              {t('bots.groups.deleteGroup', 'Delete group chat')}
             </Button>
           ) : null}
           {missing ? (

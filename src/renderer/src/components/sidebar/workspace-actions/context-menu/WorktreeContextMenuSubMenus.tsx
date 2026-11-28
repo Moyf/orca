@@ -129,7 +129,7 @@ export function WorktreeProjectGroupSubMenu({ model }: { model: WorktreeContextM
           <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel>
-              {t('auto.components.sidebar.WorktreeContextMenu.76865d827f', 'Move to group')}
+              {t('auto.components.sidebar.WorktreeContextMenu.76865d827f', 'Move to project group')}
             </DropdownMenuLabel>
             <DropdownMenuRadioGroup
               value={repo.projectGroupId ?? ''}

@@ -113,7 +113,7 @@ export function BotGroupRow({
           <ContextMenuSeparator />
           <ContextMenuItem variant="destructive" onSelect={onDelete}>
             <Trash2 className="size-3.5" />
-            {t('bots.groups.deleteGroupMenu', 'Delete group…')}
+            {t('bots.groups.deleteGroupMenu', 'Delete group chat…')}
           </ContextMenuItem>
         </>
       }

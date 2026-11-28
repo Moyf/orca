@@ -99,7 +99,7 @@ export function BotGroupPanelHeader({
           count: members.length - NAMED
         })
       : t('bots.groups.panel.membersNamed', 'Members: {{names}}', { names: names.join(', ') })
-  const settingsLabel = t('bots.groups.panel.settings', 'Group settings…')
+  const settingsLabel = t('bots.groups.panel.settings', 'Group chat settings…')
   const moreLabel = t('bots.panel.more', 'More')
   const needs = t('bots.connectors.needYou', '{{count}} need you', {
     count: needsYou,
@@ -227,7 +227,7 @@ export function BotGroupPanelHeader({
           </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onSelect={() => void deleteGroup(group)}>
             <Trash2 />
-            {t('bots.groups.deleteGroupMenu', 'Delete group…')}
+            {t('bots.groups.deleteGroupMenu', 'Delete group chat…')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
